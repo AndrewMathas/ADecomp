@@ -1,0 +1,339 @@
+
+
+% code for typesetting decomposition matrices in a DecompositionMatrix
+% environment using the syntax
+%    \begin{DecompositionMatrix}
+%            & 1^4 & 2,1^2 & 2^2 \\
+%      1^4   &  1&   &   \\
+%      2,1^2 &  t&  1&   \\
+%      2^2   &  .&  .&  1\\
+%      3,1   &  t&t^2&  .\\
+%      4     &t^2&  .&  .\\
+%    \end{DecompositionMatrix}
+
+% we need to save ~ for using in \hhline{...} below
+\let\adecomprealtilde~
+
+\ProvidesExplPackage
+  {adecomp}
+  {2023-09-28}
+  {0.2.0}
+  {A package for typesetting (decomposition) matrices}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Required packages
+\RequirePackage{array}
+\RequirePackage{amsmath}
+\RequirePackage{colortbl}
+\RequirePackage{graphicx}
+\RequirePackage{hhline}
+\RequirePackage{xcolor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% package options
+
+\bool_new:N \l__adecomp_column_box_bool  % flag for first column box
+\bool_new:N \l__adecomp_header_bool      % flag for a table header
+\bool_new:N \l__adecomp_header_box_bool  % flag for header box
+\bool_new:N \l__adecomp_header_math_bool % flag for mathematics in header
+\bool_new:N \l__adecomp_outline_bool     % flag for outlining matrices
+\bool_new:N \l__adecomp_small_bool       % flag for small matrices
+\bool_new:N \l__adecomp_table_box_bool   % flag for table box
+
+\int_new:N  \l__adecomp_rotate_int       % angle for rotating column headers
+
+\tl_new:N   \l__adecomp_header_bg_tl     % background color of header
+\tl_new:N   \l__adecomp_header_fg_tl     % foreground color of header
+\tl_new:N   \l__adecomp_header_font_tl   % font for header
+\tl_new:N   \l__adecomp_matrix_tl        % the matrix environment to use
+\tl_new:N   \l__adecomp_row_even_tl      % alternating color of even rows
+\tl_new:N   \l__adecomp_row_odd_tl       % alternating color of odd rows
+
+\keys_define:nn { adecomp }
+{
+    column~box  .bool_set:N = \l__adecomp_column_box_bool,
+    column~box  .default:n  = true,
+    even        .tl_set:N   = \l__adecomp_row_even_tl,
+    odd         .tl_set:N   = \l__adecomp_row_odd_tl,
+    header~box  .bool_set:N = \l__adecomp_header_box_bool,
+    header~box  .default:n  = true,
+    header      .bool_set:N = \l__adecomp_header_bool,
+    header      .default:n  = true,
+    header~bg   .tl_set:N   = \l__adecomp_header_bg_tl,
+    header~fg   .tl_set:N   = \l__adecomp_header_fg_tl,
+    header~font .tl_set:N   = \l__adecomp_header_font_tl,
+    header~math .bool_set:N = \l__adecomp_header_math_bool,
+    header~math .default:n  = true,
+    matrix      .code:n     = \tl_set:Nn \l__adecomp_matrix_tl {#1},
+    outline     .bool_set:N = \l__adecomp_outline_bool,
+    outline     .default:n  = true,
+    rotate      .tl_set:N   = \l__adecomp_rotate_int,
+    rulecolor   .code:n     = \arrayrulecolor{#1},
+    rulewidth   .code:n     = \setlength\arrayrulewidth{#1},
+    small       .bool_set:N = \l__adecomp_small_bool,
+    small       .default:n  = true,
+    table~box   .bool_set:N = \l__adecomp_table_box_bool,
+    table~box   .default:n  = true,
+}
+
+% default options
+\keys_set:nn { adecomp }
+{
+    even         = white,
+    odd          = AliceBlue,
+    header~box   = false,
+    header       = true,
+    header~fg    = NavyBlue,
+    header~font  = \mathbf,
+    header~math  = true,
+    matrix       = array,
+    outline      = false,
+    rotate       = 90,
+    rulecolor    = NavyBlue,
+    rulewidth    = 0.4mm,
+    small        = false,
+    table~box    = true,
+}
+
+% user settings
+\NewDocumentCommand\ADecompSettings{ m }{ \keys_set:nn {adecomp} {#1} }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% just in case we're running an old version of latex
+\providecommand \IfFormatAtLeastTF { \@ifl@t@r \fmtversion }
+
+\IfFormatAtLeastTF { 2022-06-01 }
+  { \ProcessKeyOptions [ adecomp ] }
+  {
+    \RequirePackage { l3keys2e }
+    \ProcessKeysOptions { adecomp }
+  }
+
+% define the svgnames colour from xcolor
+\XC@append\XC@@names{
+  \definecolorstrue\input{svgnam.def}\definecolorstrue
+  \let\colornameprefix\XC@@nameprefix
+}
+
+\IfFormatAtLeastTF{ 2020-10-01 } {} { \RequirePackage { xparse } }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% components of the table we are about to construct
+\int_new:N \g__adecomp_number_int   % number of adecomp matrices
+\int_new:N \g__adecomp_col_int      % current column index
+\int_new:N \l__adecomp_cols_int     % number of columns
+\seq_new:N \l__adecomp_header_seq   % the cells in the header
+\seq_new:N \l__adecomp_rows_seq     % the rows of the table
+\tl_new:N  \l__adecomp_botrule_tl   % bottom rule of table
+\tl_new:N  \l__adecomp_table_cell_tl% table cell in header
+\tl_new:N  \l__adecomp_table_header_tl   % header row of the table
+\tl_new:N  \l__adecomp_midrule_tl   % middle rule of table
+\tl_new:N  \l__adecomp_oneone_tl    % the (1,1)th entry of the matrix
+\tl_new:N  \l__adecomp_rowspecs_tl  % row specifications for table
+
+\cs_generate_variant:Nn \int_set:Nn {Nx}
+\cs_generate_variant:Nn \regex_split:nnN {nVN}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\msg_new:nnnn {adecomp} {math-mode}
+  {matrix~not~in~mathematics~mode}
+  {Use~'matrix=tabular'~option~for~tabular~environments}
+
+\msg_new:nnnn {adecomp} {not-math-mode}
+  {tabular~in~mathematics~mode}
+  {Use~'matrix=matrix'~option~for~array~environments}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The command for creating a column header
+\cs_new_protected:Npn \__adecomp_header_cell:n #1 {
+  \rotatebox{ \l__adecomp_rotate_int }{
+    \textcolor{ \l__adecomp_header_fg_tl }{
+      \bool_if:NTF \l__adecomp_header_math_bool { $#1$ }{ #1 }
+        %{ $ \l__adecomp_header_font_tl {#1}$ } % this gives an error???
+        %{   \l__adecomp_header_font_tl {#1}  }
+    }
+  }
+}
+
+\cs_generate_variant:Nn \bool_lazy_or:nnT {VVT}
+\cs_generate_variant:Nn \exp_args:No {co}
+\cs_generate_variant:Nn \regex_split:nnN {nxN}
+
+\NewDocumentEnvironment{DecompositionMatrix}{ O{} b }%
+{
+  % process any options in #1
+  \keys_set:nn {adecomp} {#1}
+
+  % check for math-mode
+  \if_mode_math:
+    \tl_if_eq:NnT  \l__adecomp_matrix_tl {matrix} {
+      \msg_warning:nn {adecomp} {not-math-mode}
+    }\textit{}
+  \else
+    \tl_if_eq:NnT  \l__adecomp_matrix_tl {tabular} {
+      \msg_warning:nn {adecomp} {math-mode}
+    }
+  \fi
+
+  % increment the number of adecomp matrices
+  \int_gincr:N \g__adecomp_number_int
+
+  % reset column index for headers
+  \int_zero:N \g__adecomp_col_int
+
+  % make the header row
+  \tl_clear:N \l__adecomp_table_header_tl
+
+  % break #2 up into rows
+  \regex_split:nnN {\c{\\}} {#2} \l__adecomp_rows_seq
+
+  \bool_if:nTF \l__adecomp_header_bool
+  {
+    % if there is a header row then pop the header off the rows
+    \seq_pop_left:NN \l__adecomp_rows_seq \l_tmpa_tl
+
+    % split up the columns in the header row
+    \regex_split:nVN  {&} \l_tmpa_tl \l__adecomp_header_seq
+
+    % extract the first column entry, which is assumed to be blank
+    \seq_pop_left:NN \l__adecomp_header_seq \l__adecomp_oneone_tl
+
+    % count the number of columns
+    \int_set:Nx \l__adecomp_cols_int { \seq_count:N \l__adecomp_header_seq }
+
+    % now construct the table header %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    % add background color to the header row if required
+    \tl_if_empty:NF \l__adecomp_header_bg_tl {
+      \tl_put_right:Nn \l__adecomp_table_header_tl { \rowcolor{ \l__adecomp_header_bg_tl } }
+    }
+
+    % add the (1,1)th entry
+    \bool_if:NTF \l__adecomp_header_box_bool
+      { \tl_put_right:Nn \l__adecomp_table_header_tl { \multicolumn{1}{r|}{\cellcolor{ white } } } }
+      { \tl_put_right:Nn \l__adecomp_table_header_tl { \multicolumn{1}{r }{\cellcolor{ white } } } }
+
+    \tl_put_right:No \l__adecomp_table_header_tl { \l__adecomp_oneone_tl }
+
+    \seq_map_inline:Nn \l__adecomp_header_seq {
+        \int_gincr:N \g__adecomp_col_int
+        \tl_set:No \l__adecomp_table_cell_tl { \__adecomp_header_cell:n {##1} }
+        \int_compare:nNnTF \g__adecomp_col_int = \l__adecomp_cols_int
+        {
+          \bool_if:nTF \l__adecomp_header_box_bool
+          { \tl_put_right:Nx \l__adecomp_table_header_tl { & \exp_not:N \multicolumn{1}{c|}{ \l__adecomp_table_cell_tl }} }
+          { \tl_put_right:Nx \l__adecomp_table_header_tl { & \exp_not:N \multicolumn{1}{c }{ \l__adecomp_table_cell_tl }} }
+        }
+        {
+          \tl_put_right:Nx \l__adecomp_table_header_tl { & \l__adecomp_table_cell_tl}
+        }
+    }
+    \tl_put_right:Nn \l__adecomp_table_header_tl { \\ }
+  }
+  {
+    % if there is no header row we still need to count the number of columns
+    \regex_split:nxN  {&} { \seq_item:Nn \l__adecomp_rows_seq {1} } \l_tmpa_seq
+    \int_set:Nx \l__adecomp_cols_int { \seq_count:N \l_tmpa_seq }
+    % if there is no header then there is also no header box
+    \bool_set_false:N \l__adecomp_header_box_bool
+  }
+
+  % set the alternating row colours
+  \rowcolors{2}{ \l__adecomp_row_odd_tl }{ \l__adecomp_row_even_tl }
+
+  % construct the row specifications for the table
+  \tl_clear:N \l__adecomp_rowspecs_tl
+  \bool_if:nT  { \l__adecomp_column_box_bool } { \tl_put_right:Nn \l__adecomp_rowspecs_tl {|} }
+  \bool_if:nTF { (\l__adecomp_column_box_bool || \l__adecomp_table_box_bool) }
+    { \tl_put_right:Nn \l__adecomp_rowspecs_tl {r|} }
+    { \tl_put_right:Nn \l__adecomp_rowspecs_tl {r} }
+  \bool_if:NTF \l__adecomp_table_box_bool
+    { \tl_put_right:Nx \l__adecomp_rowspecs_tl { *{\int_use:N \l__adecomp_cols_int }c |} }
+    { \tl_put_right:Nx \l__adecomp_rowspecs_tl { *{\int_use:N \l__adecomp_cols_int }c  } }
+
+  % Construct hhline specifications for the middle rule
+  \tl_clear:N \l__adecomp_midrule_tl
+  \bool_if:NTF \l__adecomp_column_box_bool
+    { \tl_put_right:Nn \l__adecomp_midrule_tl { |-} }
+    { \tl_put_right:Nn \l__adecomp_midrule_tl {   \exp_not:N \adecomprealtilde} }
+  \bool_if:nT  { (\l__adecomp_column_box_bool || \l__adecomp_table_box_bool) }
+    { \tl_put_right:Nn \l__adecomp_midrule_tl { | } }
+  \bool_if:nTF  { (\l__adecomp_header_box_bool || \l__adecomp_table_box_bool) }
+    { \tl_put_right:Nn \l__adecomp_midrule_tl { *{\int_eval:n{\l__adecomp_cols_int}}{-} } }
+    { \tl_put_right:Nn \l__adecomp_midrule_tl {*{\int_eval:n{\l__adecomp_cols_int}}{\exp_not:N\adecomprealtilde} } }
+  \bool_if:NT  \l__adecomp_table_box_bool { \tl_put_right:Nn \l__adecomp_midrule_tl {|} }
+
+  % Construct hhline specifications for the bottom rule
+  \tl_clear:N \l__adecomp_botrule_tl
+  \bool_if:NTF \l__adecomp_column_box_bool
+    { \tl_put_right:Nn \l__adecomp_botrule_tl { |-} }
+    { \tl_put_right:Nn \l__adecomp_botrule_tl {   \exp_not:N \adecomprealtilde} }
+  \bool_if:nT  { (\l__adecomp_column_box_bool || \l__adecomp_table_box_bool) }
+    { \tl_put_right:Nn \l__adecomp_botrule_tl { | } }
+  \bool_if:NTF \l__adecomp_table_box_bool
+  { \tl_put_right:Nn \l__adecomp_botrule_tl { *{\int_eval:n{\l__adecomp_cols_int}}{-} } }
+  { \tl_put_right:Nn \l__adecomp_botrule_tl { *{\int_eval:n{\l__adecomp_cols_int}}{\exp_not:N\adecomprealtilde} } }
+  \bool_if:NT  \l__adecomp_table_box_bool { \tl_put_right:Nn \l__adecomp_botrule_tl {|} }
+
+  % adjust spacing and font if this is a small table
+  \bool_if:NT \l__adecomp_small_bool {
+    \arraycolsep=3pt
+    \def\arraystretch{0.75}
+    \footnotesize
+  }
+  \typeout{ header~math:~ \bool_to_str:N \l__adecomp_header_math_bool!}
+  \typeout{ row~spec:~ \tl_to_str:N \l__adecomp_rowspecs_tl!}
+  \typeout{ Header:~ \tl_to_str:N \l__adecomp_table_header_tl!}
+  \typeout{ Midrule:~ \tl_to_str:N \l__adecomp_midrule_tl!}
+  \typeout{ Botrule:~ \tl_to_str:N \l__adecomp_botrule_tl!}
+
+  \typeout{starting~table}
+  % generate the table inside mathematics mode
+  $%\tl_if_eq:NnT \l__adecomp_matrix_tl {matrix} {$}
+  \exp_args:co \l__adecomp_matrix_tl {\l__adecomp_rowspecs_tl}
+    % add a line above the header if headerbox is true
+    \bool_if:NT \l__adecomp_header_box_bool {
+      \exp_args:Ne \hhline{\exp_not:N \adecomprealtilde|
+                           *{\int_eval:n{\l__adecomp_cols_int}}{-}|
+      }
+    }
+
+    % add the header
+    \tl_use:N \l__adecomp_table_header_tl
+
+    % add a line below the header
+    \exp_args:Ne \hhline { \l__adecomp_midrule_tl }
+
+    % add the body of the table
+    \seq_use:Nn \l__adecomp_rows_seq { \\ }
+
+    % add a line at bottom of the table
+    \exp_args:Ne \hhline { \l__adecomp_botrule_tl }
+
+  \use:c {end \l__adecomp_matrix_tl}
+  $
+}{}
+
+\endinput
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CHANGE LOG
+%%
+%% Version 0.1
+%%    - initial version
+%%
+%% Version 0.2
+%%    - removed NiceMatrix because it was too memory intensive
+%%    - added large number of options for headr, column and table boxes
+%%    - uses hhline for table rules, with options for the width and colour
+%%    - uses the array package for the underling matrices
+%%
+%% TODO
+%%    - option to turn off mathematics mode for headers
+%%    - option to turn off special processing for first column
+%%    - landscape option
+%%    - longtable option
+

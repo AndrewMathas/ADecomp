@@ -1,0 +1,106 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title:    title.
+% Author:   Andrew Mathas
+% Created:  September 2023
+% Modified: 14:23 Thursday, 12 October 2023
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass{amsart}
+\usepackage[svgnames]{xcolor}
+\usepackage[
+  small,
+  rotate = 60,
+]{adecomp}
+
+\begin{document}
+
+\bigskip\noindent
+\textsf{column box=false, header box=false, table box=false}:
+\begin{DecompositionMatrix}[table box=false]
+      &    1^4&  2,1^2&    3,1\\
+1^4   &      1&       &       \\
+2,1^2 &q^{2} t^{2}&      1&       \\
+2^2   &      .&    q t&       \\
+3,1   &      .&q^{2} t^{2}&      1\\
+4     &      .&      .&q^{2} t^{2}\\
+\end{DecompositionMatrix}
+
+\bigskip\noindent
+\textsf{column box=true, header box=false, table box=false}:
+\begin{DecompositionMatrix}[column box, table box=false]
+&           1^4&  2,1^2&    3,1\\
+1^4   &      1&       &       \\
+2,1^2 &q^{2} t^{2}&      1&       \\
+2^2   &      .&    q t&       \\
+3,1   &      .&q^{2} t^{2}&      1\\
+4     &      .&      .&q^{2} t^{2}\\
+\end{DecompositionMatrix}
+
+\bigskip\noindent
+\textsf{column box=false, header box=true, table box=false}:
+\begin{DecompositionMatrix}[header box, table box=false]
+&           1^4&  2,1^2&    3,1\\
+1^4   &      1&       &       \\
+2,1^2 &q^{2} t^{2}&      1&       \\
+2^2   &      .&    q t&       \\
+3,1   &      .&q^{2} t^{2}&      1\\
+4     &      .&      .&q^{2} t^{2}\\
+\end{DecompositionMatrix}
+
+\bigskip\noindent
+\textsf{column box=true, header box=true, table box=false}:
+\begin{DecompositionMatrix}[column box, header box, table box=false]
+&           1^4&  2,1^2&    3,1\\
+1^4   &      1&       &       \\
+2,1^2 &q^{2} t^{2}&      1&       \\
+2^2   &      .&    q t&       \\
+3,1   &      .&q^{2} t^{2}&      1\\
+4     &      .&      .&q^{2} t^{2}\\
+\end{DecompositionMatrix}
+
+\bigskip\noindent
+\textsf{column box=false, header box=false, table box=true (default)}:
+\begin{DecompositionMatrix}[header bg=AliceBlue,even=AliceBlue, odd=White]
+&           1^4&  2,1^2&    3,1\\
+1^4   &      1&       &       \\
+2,1^2 &q^{2} t^{2}&      1&       \\
+2^2   &      .&    q t&       \\
+3,1   &      .&q^{2} t^{2}&      1\\
+4     &      .&      .&q^{2} t^{2}\\
+\end{DecompositionMatrix}
+
+\bigskip\noindent
+\textsf{column box=true, header box=false, table box=true}:
+\begin{DecompositionMatrix}[column box]
+&           1^4&  2,1^2&    3,1\\
+1^4   &      1&       &       \\
+2,1^2 &q^{2} t^{2}&      1&       \\
+2^2   &      .&    q t&       \\
+3,1   &      .&q^{2} t^{2}&      1\\
+4     &      .&      .&q^{2} t^{2}\\
+\end{DecompositionMatrix}
+
+\bigskip\noindent
+\textsf{column box=false, header box=true, table box=true}:
+\begin{DecompositionMatrix}[header box]
+&           1^4&  2,1^2&    3,1\\
+1^4   &      1&       &       \\
+2,1^2 &q^{2} t^{2}&      1&       \\
+2^2   &      .&    q t&       \\
+3,1   &      .&q^{2} t^{2}&      1\\
+4     &      .&      .&q^{2} t^{2}\\
+\end{DecompositionMatrix}
+
+\bigskip\noindent
+\textsf{column box=true, header box=true, table box=true}:
+\begin{DecompositionMatrix}[column box, header box]
+&           1^4&  2,1^2&    3,1\\
+1^4   &      1&       &       \\
+2,1^2 &q^{2} t^{2}&      1&       \\
+2^2   &      .&    q t&       \\
+3,1   &      .&q^{2} t^{2}&      1\\
+4     &      .&      .&q^{2} t^{2}\\
+\end{DecompositionMatrix}
+
+
+
+\end{document}
