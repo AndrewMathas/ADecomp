@@ -1,7 +1,17 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% adecomp.sty
+%
+% A LaTeX package for typesetting decomposition matrices and labelled matrices
+%
+% (C) Andrew Mathas andrew.mathas@gmail.com 2023
+% GPL
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-% code for typesetting decomposition matrices in a DecompositionMatrix
-% environment using the syntax
+% Provides the LaTeX environment, DecompositionMatrix, for typesetting decomposition
+% matrices using the syntax
+%
 %    \begin{DecompositionMatrix}
 %            & 1^4 & 2,1^2 & 2^2 \\
 %      1^4   &  1&   &   \\
@@ -10,71 +20,70 @@
 %      3,1   &  t&t^2&  .\\
 %      4     &t^2&  .&  .\\
 %    \end{DecompositionMatrix}
+%
+% It is not necessary to specify the number of rows and columns. By default,
+% the column headers are rotated by 90 degrees and every second row is shaded
+% and there is a frame around the body of the matrix.
 
-% we need to save ~ for using in \hhline{...} below
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% we need to save ~ for use in \hhline{...} below
 \let\adecomprealtilde~
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% a LaTeX3 package
 \ProvidesExplPackage
   {adecomp}
   {2023-09-28}
   {0.2.0}
   {A package for typesetting (decomposition) matrices}
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Required packages
 \RequirePackage{array}
-\RequirePackage{amsmath}
 \RequirePackage{colortbl}
 \RequirePackage{graphicx}
 \RequirePackage{hhline}
 \RequirePackage{xcolor}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % package options
 
-\bool_new:N \l__adecomp_column_box_bool  % flag for first column box
+\bool_new:N \l__adecomp_small_bool       % flag for small matrices
 \bool_new:N \l__adecomp_header_bool      % flag for a table header
 \bool_new:N \l__adecomp_header_box_bool  % flag for header box
 \bool_new:N \l__adecomp_header_math_bool % flag for mathematics in header
-\bool_new:N \l__adecomp_outline_bool     % flag for outlining matrices
-\bool_new:N \l__adecomp_small_bool       % flag for small matrices
 \bool_new:N \l__adecomp_table_box_bool   % flag for table box
-
+\bool_new:N \l__adecomp_column_box_bool  % flag for first column box
 \int_new:N  \l__adecomp_rotate_int       % angle for rotating column headers
-
 \tl_new:N   \l__adecomp_header_bg_tl     % background color of header
 \tl_new:N   \l__adecomp_header_fg_tl     % foreground color of header
-\tl_new:N   \l__adecomp_header_font_tl   % font for header
-\tl_new:N   \l__adecomp_matrix_tl        % the matrix environment to use
 \tl_new:N   \l__adecomp_row_even_tl      % alternating color of even rows
 \tl_new:N   \l__adecomp_row_odd_tl       % alternating color of odd rows
+\tl_new:N   \l__adecomp_matrix_tl        % the matrix environment to use
 
+% keys for the package options
 \keys_define:nn { adecomp }
 {
-    column~box  .bool_set:N = \l__adecomp_column_box_bool,
-    column~box  .default:n  = true,
-    even        .tl_set:N   = \l__adecomp_row_even_tl,
-    odd         .tl_set:N   = \l__adecomp_row_odd_tl,
-    header~box  .bool_set:N = \l__adecomp_header_box_bool,
-    header~box  .default:n  = true,
-    header      .bool_set:N = \l__adecomp_header_bool,
-    header      .default:n  = true,
-    header~bg   .tl_set:N   = \l__adecomp_header_bg_tl,
-    header~fg   .tl_set:N   = \l__adecomp_header_fg_tl,
-    header~font .tl_set:N   = \l__adecomp_header_font_tl,
+    column~box .bool_set:N  = \l__adecomp_column_box_bool,
+    column~box .default:n   = true,
+    even       .tl_set:N    = \l__adecomp_row_even_tl,
+    odd        .tl_set:N    = \l__adecomp_row_odd_tl,
+    header~box .bool_set:N  = \l__adecomp_header_box_bool,
+    header~box .default:n   = true,
+    header    .bool_set:N   = \l__adecomp_header_bool,
+    header    .default:n    = true,
+    header~bg .tl_set:N     = \l__adecomp_header_bg_tl,
+    header~fg .tl_set:N     = \l__adecomp_header_fg_tl,
     header~math .bool_set:N = \l__adecomp_header_math_bool,
     header~math .default:n  = true,
-    matrix      .code:n     = \tl_set:Nn \l__adecomp_matrix_tl {#1},
-    outline     .bool_set:N = \l__adecomp_outline_bool,
-    outline     .default:n  = true,
-    rotate      .tl_set:N   = \l__adecomp_rotate_int,
-    rulecolor   .code:n     = \arrayrulecolor{#1},
-    rulewidth   .code:n     = \setlength\arrayrulewidth{#1},
-    small       .bool_set:N = \l__adecomp_small_bool,
-    small       .default:n  = true,
-    table~box   .bool_set:N = \l__adecomp_table_box_bool,
-    table~box   .default:n  = true,
+    matrix     .code:n      = \tl_set:Nn \l__adecomp_matrix_tl {#1},
+    rotate     .tl_set:N    = \l__adecomp_rotate_int,
+    rulecolor  .code:n      = \arrayrulecolor{#1},
+    rulewidth  .code:n      = \setlength\arrayrulewidth{#1},
+    small      .bool_set:N  = \l__adecomp_small_bool,
+    small      .default:n   = true,
+    table~box  .bool_set:N  = \l__adecomp_table_box_bool,
+    table~box  .default:n   = true,
 }
 
 % default options
@@ -85,10 +94,8 @@
     header~box   = false,
     header       = true,
     header~fg    = NavyBlue,
-    header~font  = \mathbf,
     header~math  = true,
     matrix       = array,
-    outline      = false,
     rotate       = 90,
     rulecolor    = NavyBlue,
     rulewidth    = 0.4mm,
@@ -99,7 +106,7 @@
 % user settings
 \NewDocumentCommand\ADecompSettings{ m }{ \keys_set:nn {adecomp} {#1} }
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % just in case we're running an old version of latex
 \providecommand \IfFormatAtLeastTF { \@ifl@t@r \fmtversion }
 
@@ -118,25 +125,25 @@
 
 \IfFormatAtLeastTF{ 2020-10-01 } {} { \RequirePackage { xparse } }
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % components of the table we are about to construct
-\int_new:N \g__adecomp_number_int   % number of adecomp matrices
-\int_new:N \g__adecomp_col_int      % current column index
-\int_new:N \l__adecomp_cols_int     % number of columns
-\seq_new:N \l__adecomp_header_seq   % the cells in the header
-\seq_new:N \l__adecomp_rows_seq     % the rows of the table
-\tl_new:N  \l__adecomp_botrule_tl   % bottom rule of table
-\tl_new:N  \l__adecomp_table_cell_tl% table cell in header
-\tl_new:N  \l__adecomp_table_header_tl   % header row of the table
-\tl_new:N  \l__adecomp_midrule_tl   % middle rule of table
-\tl_new:N  \l__adecomp_oneone_tl    % the (1,1)th entry of the matrix
-\tl_new:N  \l__adecomp_rowspecs_tl  % row specifications for table
+\int_new:N \g__adecomp_number_int      % index number of adecomp matrices
+\int_new:N \g__adecomp_col_int         % current column index
+\int_new:N \l__adecomp_cols_int        % number of columns
+\seq_new:N \l__adecomp_header_seq      % the cells in the header
+\seq_new:N \l__adecomp_rows_seq        % the rows of the table
+\tl_new:N  \l__adecomp_botrule_tl      % bottom rule of table
+\tl_new:N  \l__adecomp_table_cell_tl   % table cell in header
+\tl_new:N  \l__adecomp_table_header_tl % header row of the table
+\tl_new:N  \l__adecomp_midrule_tl      % middle rule of table
+\tl_new:N  \l__adecomp_oneone_tl       % the (1,1)th entry of the matrix
+\tl_new:N  \l__adecomp_rowspecs_tl     % row specifications for table
 
 \cs_generate_variant:Nn \int_set:Nn {Nx}
 \cs_generate_variant:Nn \regex_split:nnN {nVN}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \msg_new:nnnn {adecomp} {math-mode}
   {matrix~not~in~mathematics~mode}
   {Use~'matrix=tabular'~option~for~tabular~environments}
@@ -146,14 +153,12 @@
   {Use~'matrix=matrix'~option~for~array~environments}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % The command for creating a column header
 \cs_new_protected:Npn \__adecomp_header_cell:n #1 {
   \rotatebox{ \l__adecomp_rotate_int }{
     \textcolor{ \l__adecomp_header_fg_tl }{
-      \bool_if:NTF \l__adecomp_header_math_bool { $#1$ }{ #1 }
-        %{ $ \l__adecomp_header_font_tl {#1}$ } % this gives an error???
-        %{   \l__adecomp_header_font_tl {#1}  }
+      \bool_if:NTF \l__adecomp_header_math_bool {$#1$} {#1}
     }
   }
 }
@@ -162,6 +167,8 @@
 \cs_generate_variant:Nn \exp_args:No {co}
 \cs_generate_variant:Nn \regex_split:nnN {nxN}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The DecompositionMatrix environment
 \NewDocumentEnvironment{DecompositionMatrix}{ O{} b }%
 {
   % process any options in #1
@@ -284,13 +291,7 @@
     \def\arraystretch{0.75}
     \footnotesize
   }
-  \typeout{ header~math:~ \bool_to_str:N \l__adecomp_header_math_bool!}
-  \typeout{ row~spec:~ \tl_to_str:N \l__adecomp_rowspecs_tl!}
-  \typeout{ Header:~ \tl_to_str:N \l__adecomp_table_header_tl!}
-  \typeout{ Midrule:~ \tl_to_str:N \l__adecomp_midrule_tl!}
-  \typeout{ Botrule:~ \tl_to_str:N \l__adecomp_botrule_tl!}
 
-  \typeout{starting~table}
   % generate the table inside mathematics mode
   $%\tl_if_eq:NnT \l__adecomp_matrix_tl {matrix} {$}
   \exp_args:co \l__adecomp_matrix_tl {\l__adecomp_rowspecs_tl}
@@ -337,3 +338,23 @@
 %%    - landscape option
 %%    - longtable option
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Copyright (C) 2023 by Andrew Mathas <andrew.mathas@gmail.com>
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License (LPPL), either
+%% version 1.3c of this license or (at your option) any later
+%% version.  The latest version of this license is in the file:
+%%
+%% http://www.latex-project.org/lppl.txt
+%%
+%% This work is "maintained" (as per LPPL maintenance status) by
+%% Andrew Mathas.
+%%
+%% This package consists of the files:
+%%       adecomp.sty
+%%       adecomp.tex
+%%       README.md
+%%
+%% end of adecomp.sty
